@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
+	"strconv"
 
 	"github.com/Scr3amz/EffectiveMobile/config"
 	"github.com/Scr3amz/EffectiveMobile/internal/database"
@@ -29,11 +31,25 @@ func (h *Handlers) FioHandler(w http.ResponseWriter, req *http.Request) {
 			h.ListFio(w, req)
 		case http.MethodPut:
 			h.UpdateFio(w, req)
-		case http.MethodDelete:
-			h.RemoveFio(w, req)
 		default:
-			http.Error(w, fmt.Sprintf("expect method POST, GET, PUT or DELETE at /fios/, got %v", req.Method), http.StatusMethodNotAllowed)
+			http.Error(w, fmt.Sprintf("expect method POST, GET or PUT at /fios/, got %v", req.Method), http.StatusMethodNotAllowed)
 			return
+		}
+	} else {
+		path := strings.Trim(req.URL.Path, "/")
+		pathParts := strings.Split(path, "/")
+		if len(pathParts) < 2 {
+			http.Error(w, "expect /fios/<id>", http.StatusBadRequest)
+			return
+		}
+		id, err := strconv.Atoi(pathParts[1])
+		if err != nil {
+			// TODO: испарвить
+			return
+		}
+		switch req.Method {
+		case http.MethodDelete:
+			h.RemoveFio(w, req, id)
 		}
 	}
 }

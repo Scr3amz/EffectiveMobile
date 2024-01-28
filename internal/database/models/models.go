@@ -1,7 +1,7 @@
 package models
 
 type FIO struct {
-	ID          int
+	ID          int      `gorm:"primary"`
 	Name        string
 	Surname     string
 	Patronymic  string
