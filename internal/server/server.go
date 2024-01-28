@@ -5,14 +5,14 @@ import (
 	"net/http"
 
 	"github.com/Scr3amz/EffectiveMobile/config"
-	"github.com/Scr3amz/EffectiveMobile/internal/database"
+	"github.com/Scr3amz/EffectiveMobile/internal/database/postgresql"
 	"github.com/Scr3amz/EffectiveMobile/internal/transport/rest/handlers"
 )
 
 func RunServer(config config.Config) {
 	mux := http.NewServeMux()
-	store := database.Store{}
-	handlers := handlers.NewFioHandler(store, config)
+	store := postgresql.NewStore(config)
+	handlers := handlers.NewFioHandler(*store, config)
 
 	mux.HandleFunc("/fios/", handlers.FioHandler)
 	

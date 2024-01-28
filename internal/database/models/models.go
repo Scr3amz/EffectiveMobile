@@ -1,10 +1,11 @@
 package models
 
 type FIO struct {
-	name        string
-	surname     string
-	patronymic  string
-	age         int
-	gender      string
-	nationality string
+	ID          int
+	Name        string
+	Surname     string
+	Patronymic  string
+	Age         int
+	Gender      string
+	Nationality string
 }
