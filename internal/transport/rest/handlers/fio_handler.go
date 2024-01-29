@@ -6,11 +6,11 @@ import (
 	"mime"
 	"net/http"
 
+	"github.com/Scr3amz/EffectiveMobile/internal/api"
 	"github.com/Scr3amz/EffectiveMobile/internal/database/models"
 )
 
 func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprint(w, "creating fio...")
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
@@ -23,8 +23,13 @@ func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
 	}
 	dec := json.NewDecoder(req.Body)
 	dec.DisallowUnknownFields()
-	var fio models.FIO 
+	var fio models.FIO
 	if err := dec.Decode(&fio); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = api.FillTheMessage(&fio)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -33,24 +38,19 @@ func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Fprint(w, "fio added successfully\nid:")
-	renderJSON(w, fioID)
+	fmt.Fprintf(w, "fio with id:%v added successfully", fioID)
 }
 
-func (h *Handlers) ListFio(w http.ResponseWriter, req *http.Request)   {
-	fmt.Fprint(w, "showing all fios...")
-
+func (h *Handlers) ListFio(w http.ResponseWriter, req *http.Request) {
 	fios, err := h.store.FioStorer.List()
-	if err!= nil {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	renderJSON(w , fios)
+	renderJSON(w, fios)
 }
 
 func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprint(w, "updating fio...")
-
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
@@ -74,25 +74,20 @@ func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Fprint(w, "fio updated successfully\nid:")
-	renderJSON(w, fioID)
-
+	fmt.Fprintf(w, "fio with id:%v updated successfully", fioID)
 }
 
 func (h *Handlers) RemoveFio(w http.ResponseWriter, req *http.Request, id int) {
-	fmt.Fprint(w, "removing fio...")
-
 	err := h.store.FioStorer.Remove(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	fmt.Fprintf(w, "fio with id:%v deleted successfully", id)
-	
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}) {
-	js, err := json.Marshal(v)
+	js, err := json.MarshalIndent(v, "", "\t")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
