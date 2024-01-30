@@ -1,13 +1,17 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
-	"strconv"
+	"regexp"
 
 	"github.com/Scr3amz/EffectiveMobile/config"
 	"github.com/Scr3amz/EffectiveMobile/internal/database"
+)
+
+var (
+	FiosReg           = regexp.MustCompile(`^/fios/*$`)
+	FiosRegWithID     = regexp.MustCompile(`^/fios/[0-9]+$`)
+	FiosRegWithParams = regexp.MustCompile(`^/fios\?\w+=\w+(&\w+=\w+)*$`)
 )
 
 type Handlers struct {
@@ -23,33 +27,23 @@ func NewFioHandler(s database.Store, c config.Config) *Handlers {
 }
 
 func (h *Handlers) FioHandler(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/fios/" {
-		switch req.Method {
-		case http.MethodPost:
-			h.CreateFio(w, req)
-		case http.MethodGet:
-			h.ListFio(w, req)
-		case http.MethodPut:
-			h.UpdateFio(w, req)
-		default:
-			http.Error(w, fmt.Sprintf("expect method POST, GET or PUT at /fios/, got %v", req.Method), http.StatusMethodNotAllowed)
-			return
-		}
-	} else {
-		path := strings.Trim(req.URL.Path, "/")
-		pathParts := strings.Split(path, "/")
-		if len(pathParts) < 2 {
-			http.Error(w, "expect /fios/<id>", http.StatusBadRequest)
-			return
-		}
-		id, err := strconv.Atoi(pathParts[1])
-		if err != nil {
-			// TODO: испарвить
-			return
-		}
-		switch req.Method {
-		case http.MethodDelete:
-			h.RemoveFio(w, req, id)
-		}
-	}
+	switch {
+    case req.Method == http.MethodPost && FiosReg.MatchString(req.URL.Path):
+		h.CreateFio(w, req)
+        return
+    case req.Method == http.MethodGet && FiosReg.MatchString(req.URL.Path):
+		h.ListFio(w, req)
+        return
+    case req.Method == http.MethodGet && FiosRegWithID.MatchString(req.URL.Path):
+
+        return
+    case req.Method == http.MethodPut && FiosReg.MatchString(req.URL.Path):
+		h.UpdateFio(w, req)
+        return
+    case req.Method == http.MethodDelete && FiosRegWithID.MatchString(req.URL.Path):
+		h.RemoveFio(w, req)
+        return
+    default:
+        return
+    }
 }

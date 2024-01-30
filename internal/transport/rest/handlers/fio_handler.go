@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/Scr3amz/EffectiveMobile/internal/api"
 	"github.com/Scr3amz/EffectiveMobile/internal/database/models"
@@ -77,10 +79,16 @@ func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "fio with id:%v updated successfully", fioID)
 }
 
-func (h *Handlers) RemoveFio(w http.ResponseWriter, req *http.Request, id int) {
-	err := h.store.FioStorer.Remove(id)
+func (h *Handlers) RemoveFio(w http.ResponseWriter, req *http.Request) {
+	matches := strings.Split(req.URL.Path, "/")
+	id, err := strconv.Atoi(matches[2])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = h.store.FioStorer.Remove(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fmt.Fprintf(w, "fio with id:%v deleted successfully", id)
