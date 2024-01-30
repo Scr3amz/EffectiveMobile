@@ -16,10 +16,12 @@ func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		h.logger.WarningLog.Println("occured problem with mediatype")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediatype != "application/json" {
+		h.logger.WarningLog.Println("got wrong mediatype")
 		http.Error(w, "expect application/json content-type", http.StatusUnsupportedMediaType)
 		return
 	}
@@ -27,11 +29,18 @@ func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
 	dec.DisallowUnknownFields()
 	var fio models.FIO
 	if err := dec.Decode(&fio); err != nil {
+		h.logger.WarningLog.Println("failed to decode fio")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = api.FillTheMessage(&fio)
+	if fio.Name == "" || fio.Surname == "" {
+		h.logger.WarningLog.Println("got fio without name or surname")
+		http.Error(w, `data must contain fields "name" and "surname"`, http.StatusBadRequest)
+		return
+	}
+	err = api.FillTheMessage(&fio, h.logger)
 	if err != nil {
+		h.logger.WarningLog.Println("failed to get data from external api")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -40,7 +49,8 @@ func (h *Handlers) CreateFio(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Fprintf(w, "fio with id:%v added successfully", fioID)
+	h.logger.InfoLog.Printf("fio with id:%v added successfully\n", fioID)
+	fmt.Fprintf(w, "fio with id:%v added successfully\n", fioID)
 }
 
 func (h *Handlers) ListFio(w http.ResponseWriter, req *http.Request) {
@@ -65,19 +75,26 @@ func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		h.logger.WarningLog.Println("occured problem with mediatype")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediatype != "application/json" {
+		h.logger.WarningLog.Println("got wrong mediatype")
 		http.Error(w, "expect application/json content-type", http.StatusUnsupportedMediaType)
 		return
 	}
 	dec := json.NewDecoder(req.Body)
 	dec.DisallowUnknownFields()
-
 	var fio models.FIO
 	if err := dec.Decode(&fio); err != nil {
+		h.logger.WarningLog.Println("failed to decode fio")
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if fio.Name == "" || fio.Surname == "" {
+		h.logger.WarningLog.Println("got fio without name or surname")
+		http.Error(w, `data must contain fields "name" and "surname"`, http.StatusBadRequest)
 		return
 	}
 	fioID, err := h.store.FioStorer.Update(fio)
@@ -85,13 +102,15 @@ func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Fprintf(w, "fio with id:%v updated successfully", fioID)
+	h.logger.InfoLog.Printf("fio with id:%v updated successfully\n", fioID)
+	fmt.Fprintf(w, "fio with id:%v updated successfully\n", fioID)
 }
 
 func (h *Handlers) RemoveFio(w http.ResponseWriter, req *http.Request) {
 	matches := strings.Split(req.URL.Path, "/")
 	id, err := strconv.Atoi(matches[2])
 	if err != nil {
+		h.logger.WarningLog.Println("failed to get id of fio")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -100,6 +119,7 @@ func (h *Handlers) RemoveFio(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	h.logger.InfoLog.Printf("fio with id:%v deleted successfully\n", id)
 	fmt.Fprintf(w, "fio with id:%v deleted successfully", id)
 }
 

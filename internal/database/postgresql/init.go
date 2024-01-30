@@ -2,25 +2,28 @@ package postgresql
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/Scr3amz/EffectiveMobile/config"
 	"github.com/Scr3amz/EffectiveMobile/internal/database"
 	"github.com/Scr3amz/EffectiveMobile/internal/database/models"
+	"github.com/Scr3amz/EffectiveMobile/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type postgresqlStore struct {
-	Fios     FioStore
+	Fios FioStore
 }
 
 // NewStore creates postgreSQL database and returns Store structure.
-func NewStore(config config.Config) *database.Store {
-	db := createDB(config)
+func NewStore(config config.Config, logger logger.Logger) *database.Store {
+	db := createDB(config, logger)
 
 	postgresqlStore := postgresqlStore{
-		Fios: FioStore{DB: *db},
+		Fios: FioStore{
+			DB:     *db,
+			Logger: logger,
+		},
 	}
 	store := database.Store{
 		FioStorer: postgresqlStore.Fios,
@@ -34,7 +37,7 @@ func NewStore(config config.Config) *database.Store {
 // To create DB you need a Config file host of DB, port of DB,
 // name of DB, username and password from DB. This function will
 // panic if failed to create or migrate.
-func createDB(config config.Config) *gorm.DB {
+func createDB(config config.Config, logger logger.Logger) *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		config.HostDB,
 		config.UserDB,
@@ -42,21 +45,21 @@ func createDB(config config.Config) *gorm.DB {
 		config.NameDB,
 		config.PortDB,
 	)
-	log.Println("dsn: ",dsn)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Println("failed to connect to postgresql database")
+		logger.ErrorLog.Println("failed to connect to postgresql database")
 		panic(err)
 	}
-	setupDB(db)
+	setupDB(db, logger)
 	return db
 }
 
-func setupDB(db *gorm.DB) {
+// setupDB migrates database. Panic if failed
+func setupDB(db *gorm.DB, logger logger.Logger) {
 	err := db.AutoMigrate(&models.FIO{})
-	
+
 	if err != nil {
-		log.Println("failed to migrate tables")
+		logger.ErrorLog.Println("failed to migrate tables")
 		panic(err)
 	}
 }

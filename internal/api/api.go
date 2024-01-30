@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/Scr3amz/EffectiveMobile/internal/database/models"
+	"github.com/Scr3amz/EffectiveMobile/logger"
 	"github.com/tidwall/gjson"
 )
 
@@ -17,24 +18,27 @@ var (
 	nationalizeApi = "https://api.nationalize.io/"
 )
 
-func FillTheMessage(fio *models.FIO) error {
-	err := fillAge(fio)
+func FillTheMessage(fio *models.FIO, logger logger.Logger) error {
+	err := fillAge(fio, logger)
 	if err != nil {
+		logger.WarningLog.Println("failed to get age from external api")
 		return err
 	}
-	fillGender(fio)
+	fillGender(fio, logger)
 	if err != nil {
+		logger.WarningLog.Println("failed to get gender from external api")
 		return err
 	}
-	fillNationality(fio)
+	fillNationality(fio, logger)
 	if err != nil {
+		logger.WarningLog.Println("failed to get nationality from external api")
 		return err
 	}
 	return nil
 }
 
-func fillAge(fio *models.FIO) error {
-	body, err := sendRequest(agifyApi, fio.Name)
+func fillAge(fio *models.FIO, logger logger.Logger) error {
+	body, err := sendRequest(agifyApi, fio.Name, logger)
 	if err != nil {
 		return err
 	}
@@ -43,8 +47,8 @@ func fillAge(fio *models.FIO) error {
 	return nil
 }
 
-func fillGender(fio *models.FIO) error {
-	body, err := sendRequest(genderizeApi, fio.Name)
+func fillGender(fio *models.FIO, logger logger.Logger) error {
+	body, err := sendRequest(genderizeApi, fio.Name, logger)
 	if err != nil {
 		return err
 	}
@@ -53,8 +57,8 @@ func fillGender(fio *models.FIO) error {
 	return nil
 }
 
-func fillNationality(fio *models.FIO) error {
-	body, err := sendRequest(nationalizeApi, fio.Name)
+func fillNationality(fio *models.FIO, logger logger.Logger) error {
+	body, err := sendRequest(nationalizeApi, fio.Name, logger)
 	if err != nil {
 		return err
 	}
@@ -63,9 +67,10 @@ func fillNationality(fio *models.FIO) error {
 	return nil
 }
 
-func sendRequest(requestURL, name string) ([]byte, error) {
+func sendRequest(requestURL, name string, logger logger.Logger) ([]byte, error) {
 	baseURL, err := url.Parse(requestURL)
 	if err != nil {
+		logger.WarningLog.Println("failed to parse url")
 		return nil, err
 	}
 	params := url.Values{}
@@ -74,13 +79,14 @@ func sendRequest(requestURL, name string) ([]byte, error) {
 
 	resp, err := http.Get(baseURL.String())
 	if err != nil {
+		logger.WarningLog.Println("failed to send GET request")
 		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.WarningLog.Println("failed to read response body")
 		return nil, err
 	}
 	return body, nil
-
 }
