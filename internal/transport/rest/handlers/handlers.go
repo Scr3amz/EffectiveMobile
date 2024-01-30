@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	FiosReg           = regexp.MustCompile(`^/fios/*$`)
+	FiosReg           = regexp.MustCompile(`^/fios/$`)
 	FiosRegWithID     = regexp.MustCompile(`^/fios/[0-9]+$`)
 	FiosRegWithParams = regexp.MustCompile(`^/fios\?\w+=\w+(&\w+=\w+)*$`)
 )
@@ -31,11 +31,8 @@ func (h *Handlers) FioHandler(w http.ResponseWriter, req *http.Request) {
     case req.Method == http.MethodPost && FiosReg.MatchString(req.URL.Path):
 		h.CreateFio(w, req)
         return
-    case req.Method == http.MethodGet && FiosReg.MatchString(req.URL.Path):
-		h.ListFio(w, req)
-        return
-    case req.Method == http.MethodGet && FiosRegWithID.MatchString(req.URL.Path):
-
+	case req.Method == http.MethodGet:
+		h.ListFioWithPagination(w, req)
         return
     case req.Method == http.MethodPut && FiosReg.MatchString(req.URL.Path):
 		h.UpdateFio(w, req)

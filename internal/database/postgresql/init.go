@@ -35,8 +35,6 @@ func NewStore(config config.Config) *database.Store {
 // name of DB, username and password from DB. This function will
 // panic if failed to create or migrate.
 func createDB(config config.Config) *gorm.DB {
-	// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		config.HostDB,
 		config.UserDB,

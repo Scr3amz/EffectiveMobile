@@ -2,6 +2,8 @@ package postgresql
 
 import (
 	"log"
+	"net/http"
+	"strconv"
 
 	"github.com/Scr3amz/EffectiveMobile/internal/database/models"
 	"gorm.io/gorm"
@@ -23,6 +25,21 @@ func (s FioStore) Add(fio models.FIO) (int, error) {
 func (s FioStore) List() ([]models.FIO, error) {
 	fios := []models.FIO{}
 	resault := s.DB.Find(&fios)
+	if resault.Error != nil {
+		log.Println("Unable to show FIOs from table")
+		return nil, resault.Error
+	}
+	if resault.RowsAffected == 0 {
+		log.Println("FIOs table is empty")
+		return nil, nil
+	}
+	return fios, nil
+
+}
+
+func (s FioStore) ListWithPagination(req *http.Request) ([]models.FIO, error) {
+	fios := []models.FIO{}
+	resault := s.DB.Scopes(paginate(req)).Find(&fios)
 	if resault.Error != nil {
 		log.Println("Unable to show FIOs from table")
 		return nil, resault.Error
@@ -63,4 +80,39 @@ func (s FioStore) Remove(fioID int) error {
 	}
 	log.Printf("FIO with id:%v deleted", fioID)
 	return nil
+}
+
+func paginate(r *http.Request) func(db *gorm.DB) *gorm.DB {
+	return func (db *gorm.DB) *gorm.DB {
+	  q := r.URL.Query()
+	  key := q.Get("page")
+	  if key == "" {
+		return db
+	  }
+	  page, err := strconv.Atoi(key)
+	  if err != nil {
+		return db
+	  }
+	  if page <= 0 {
+		page = 1
+	  }
+	  
+	  key = q.Get("page_size")
+	  if key == "" {
+		return db
+	  }
+	  pageSize, err := strconv.Atoi(key)
+	  if err != nil {
+		return db
+	  }
+	  switch {
+	  case pageSize > 100:
+		pageSize = 100
+	  case pageSize <= 0:
+		pageSize = 10
+	  }
+  
+	  offset := (page - 1) * pageSize
+	  return db.Offset(offset).Limit(pageSize)
+	}
 }

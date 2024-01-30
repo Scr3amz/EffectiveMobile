@@ -52,6 +52,15 @@ func (h *Handlers) ListFio(w http.ResponseWriter, req *http.Request) {
 	renderJSON(w, fios)
 }
 
+func (h *Handlers) ListFioWithPagination(w http.ResponseWriter, req *http.Request) {
+	fios, err := h.store.FioStorer.ListWithPagination(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	renderJSON(w, fios)
+}
+
 func (h *Handlers) UpdateFio(w http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	mediatype, _, err := mime.ParseMediaType(contentType)
